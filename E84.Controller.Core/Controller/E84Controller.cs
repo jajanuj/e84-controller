@@ -428,11 +428,12 @@ namespace E84.Controller.Core.Controller
                break;
 
             case E84State.Complete:
-               // clear TRANSFER and BUSY/CLAMP and go back to Idle
+               // clear TRANSFER and BUSY/CLAMP/DOCK and go back to Idle
                SetOutputState("TRANSFER", false);
                SetOutputState("BUSY", false);
                SetOutputState("HO_AVBL", false);
                SetOutputState("CLAMP", false);
+               SetOutputState("DOCK", false);
                TransitionTo(E84State.Idle);
                break;
 
