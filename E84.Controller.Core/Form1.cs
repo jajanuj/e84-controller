@@ -93,6 +93,67 @@ namespace E84.Controller.Core
       {
          string logMessage = $"[{DateTime.Now:HH:mm:ss.fff}] {eventType}: {message}";
          AddLog(logMessage);
+
+         // Auto-clear input signals when returning to Idle after Complete
+         // This prevents immediate re-triggering of a new transfer cycle
+         if (eventType == E84Event.StateEntered && message == "Idle")
+         {
+            var status = _controller?.GetStatus();
+            if (status != null)
+            {
+               // Check if we just came from Complete state by checking if this is not the initial Idle
+               // We auto-clear the request and handshake signals to simulate proper E84 behavior
+               if (InvokeRequired)
+               {
+                  BeginInvoke(new Action(() => AutoClearInputSignals()));
+               }
+               else
+               {
+                  AutoClearInputSignals();
+               }
+            }
+         }
+      }
+
+      private void AutoClearInputSignals()
+      {
+         // Only auto-clear if we're in Idle state (prevents clearing during active transfers)
+         var status = _controller?.GetStatus();
+         if (status?.State == E84State.Idle)
+         {
+            // Auto-uncheck TR_REQ, COMPT after completing a transfer
+            // This simulates proper E84 protocol where signals are deasserted after handshake
+            if (checkBoxTR_REQ.Checked)
+            {
+               checkBoxTR_REQ.Checked = false;
+               AddLog("[INFO] 自動清除 TR_REQ (模擬正常 E84 協定行為)");
+            }
+            if (checkBoxL_REQ.Checked)
+            {
+               checkBoxL_REQ.Checked = false;
+               AddLog("[INFO] 自動清除 L_REQ (模擬正常 E84 協定行為)");
+            }
+            if (checkBoxU_REQ.Checked)
+            {
+               checkBoxU_REQ.Checked = false;
+               AddLog("[INFO] 自動清除 U_REQ (模擬正常 E84 協定行為)");
+            }
+            if (checkBoxCOMPT.Checked)
+            {
+               checkBoxCOMPT.Checked = false;
+               AddLog("[INFO] 自動清除 COMPT (模擬正常 E84 協定行為)");
+            }
+            if (checkBoxVALID.Checked)
+            {
+               checkBoxVALID.Checked = false;
+               AddLog("[INFO] 自動清除 VALID (模擬正常 E84 協定行為)");
+            }
+            if (checkBoxREADY.Checked)
+            {
+               checkBoxREADY.Checked = false;
+               AddLog("[INFO] 自動清除 READY (模擬正常 E84 協定行為)");
+            }
+         }
       }
 
       private void AddLog(string message)
