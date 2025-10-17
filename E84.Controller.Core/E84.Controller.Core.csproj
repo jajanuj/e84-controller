@@ -64,10 +64,14 @@
     <Compile Include="Models\E84StatusSnapshot.cs" />
     <Compile Include="Models\Enums.cs" />
     <Compile Include="Models\PlcDevice.cs" />
+    <Compile Include="Plc\AlwaysPassInterlock.cs" />
     <Compile Include="Plc\FakePlc.cs" />
     <Compile Include="Plc\MxComponentPlc.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Form1.resx">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
