@@ -334,12 +334,12 @@ namespace E84.Controller.Core
 
       private void Form1_Load(object sender, EventArgs e)
       {
-         AddLog("=== E84 控制器測試介面已啟動 ===");
+         AddLog("=== E84 RGV/AGV控制器測試介面已啟動 ===");
          AddLog("說明：");
-         AddLog("1. 選擇方向 (Inbound/Outbound)");
+         AddLog("1. 選擇方向 (Load/Unload)");
          AddLog("2. 點擊「啟動 Start」開始控制器");
-         AddLog("3. 使用左側的核取方塊模擬 PLC 輸入信號");
-         AddLog("4. 觀察右側的輸出信號變化");
+         AddLog("3. 使用左側的核取方塊模擬 EQ端 輸入信號");
+         AddLog("4. 觀察右側的 RGV輸出 信號變化");
          AddLog("5. 查看狀態轉換和事件記錄");
          AddLog("");
       }
