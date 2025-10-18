@@ -38,26 +38,31 @@ namespace E84.Controller.Core
          // 初始化 FakePlc 模擬器
          _fakePlc = new FakePlc();
 
-         // 建立 I/O 映射表
+         // Active側(RGV/AGV) I/O 映射表
+         // Inputs: 從EQ(Passive)接收的信號
          var inputs = new Dictionary<string, PlcDevice>
          {
-            { "TR_REQ", new PlcDevice { Address = "X100", Inverted = false } },
-            { "VALID", new PlcDevice { Address = "X101", Inverted = false } },
-            { "COMPT", new PlcDevice { Address = "X102", Inverted = false } },
-            { "L_REQ", new PlcDevice { Address = "X103", Inverted = false } },
-            { "U_REQ", new PlcDevice { Address = "X104", Inverted = false } },
-            { "READY", new PlcDevice { Address = "X105", Inverted = false } },
-            { "RESET", new PlcDevice { Address = "X106", Inverted = false } }
+            { "L_REQ", new PlcDevice { Address = "X100", Inverted = false } },
+            { "U_REQ", new PlcDevice { Address = "X101", Inverted = false } },
+            { "READY", new PlcDevice { Address = "X102", Inverted = false } },
+            { "LC_REQ", new PlcDevice { Address = "X103", Inverted = false } },
+            { "UC_REQ", new PlcDevice { Address = "X104", Inverted = false } },
+            { "Carrier", new PlcDevice { Address = "X105", Inverted = false } },
+            { "EQ_ONLINE", new PlcDevice { Address = "X106", Inverted = false } },
+            { "IN_LINE", new PlcDevice { Address = "X107", Inverted = false } },
+            { "ALARM", new PlcDevice { Address = "X108", Inverted = false } },
+            { "IDLE", new PlcDevice { Address = "X109", Inverted = false } },
+            { "RUN", new PlcDevice { Address = "X110", Inverted = false } }
          };
 
+         // Outputs: RGV/AGV發送給EQ的信號
          var outputs = new Dictionary<string, PlcDevice>
          {
-            { "BUSY", new PlcDevice { Address = "Y200", Inverted = false } },
-            { "HO_AVBL", new PlcDevice { Address = "Y201", Inverted = false } },
-            { "TRANSFER", new PlcDevice { Address = "Y202", Inverted = false } },
-            { "CLAMP", new PlcDevice { Address = "Y203", Inverted = false } },
-            { "DOCK", new PlcDevice { Address = "Y204", Inverted = false } },
-            { "ABORT", new PlcDevice { Address = "Y205", Inverted = false } }
+            { "VALID", new PlcDevice { Address = "Y200", Inverted = false } },
+            { "TR_REQ", new PlcDevice { Address = "Y201", Inverted = false } },
+            { "BUSY", new PlcDevice { Address = "Y202", Inverted = false } },
+            { "COMP", new PlcDevice { Address = "Y203", Inverted = false } }
+            // Carrier ID 輸出會在實際應用中加入
          };
 
          _ioMap = new E84IoMap(inputs, outputs, debounceMs: 10);
@@ -68,16 +73,16 @@ namespace E84.Controller.Core
          // 建立記錄器
          _logger = new TestUiLogger(this);
 
-         // 建立配置
+         // 建立配置 - Active側超時設定
          _config = new E84Config
          {
             PollIntervalMs = 100,
             DebounceMs = 50,
-            WaitTrReqMs = 10000,
-            WaitValidMs = 10000,
-            WaitComptMs = 15000,
-            ClampMs = 1500,
-            DockMs = 3000,
+            SignalResponseDelayMs = 500,  // 0.5秒延遲
+            T1_WaitLReqUReqMs = 5000,     // T1: 5秒
+            T3_WaitReadyMs = 5000,         // T3: 依現場，預設5秒
+            T5_TransferActionMs = 10000,   // T5: 依現場，預設10秒
+            T6_WaitReadyOffMs = 5000,      // T6: 5秒
             PlcReconnectDelayMs = 1000,
             PlcReconnectMaxAttempts = 3
          };
@@ -121,13 +126,8 @@ namespace E84.Controller.Core
          var status = _controller?.GetStatus();
          if (status?.State == E84State.Idle)
          {
-            // Auto-uncheck TR_REQ, COMPT after completing a transfer
+            // Auto-uncheck signals after completing a transfer
             // This simulates proper E84 protocol where signals are deasserted after handshake
-            if (checkBoxTR_REQ.Checked)
-            {
-               checkBoxTR_REQ.Checked = false;
-               AddLog("[INFO] 自動清除 TR_REQ (模擬正常 E84 協定行為)");
-            }
             if (checkBoxL_REQ.Checked)
             {
                checkBoxL_REQ.Checked = false;
@@ -138,20 +138,20 @@ namespace E84.Controller.Core
                checkBoxU_REQ.Checked = false;
                AddLog("[INFO] 自動清除 U_REQ (模擬正常 E84 協定行為)");
             }
-            if (checkBoxCOMPT.Checked)
-            {
-               checkBoxCOMPT.Checked = false;
-               AddLog("[INFO] 自動清除 COMPT (模擬正常 E84 協定行為)");
-            }
-            if (checkBoxVALID.Checked)
-            {
-               checkBoxVALID.Checked = false;
-               AddLog("[INFO] 自動清除 VALID (模擬正常 E84 協定行為)");
-            }
             if (checkBoxREADY.Checked)
             {
                checkBoxREADY.Checked = false;
                AddLog("[INFO] 自動清除 READY (模擬正常 E84 協定行為)");
+            }
+            if (checkBoxLC_REQ.Checked)
+            {
+               checkBoxLC_REQ.Checked = false;
+               AddLog("[INFO] 自動清除 LC_REQ (模擬正常 E84 協定行為)");
+            }
+            if (checkBoxUC_REQ.Checked)
+            {
+               checkBoxUC_REQ.Checked = false;
+               AddLog("[INFO] 自動清除 UC_REQ (模擬正常 E84 協定行為)");
             }
          }
       }
@@ -183,7 +183,7 @@ namespace E84.Controller.Core
          try
          {
             _cts = new CancellationTokenSource();
-            E84Direction direction = radioInbound.Checked ? E84Direction.Inbound : E84Direction.Outbound;
+            E84Direction direction = radioLoad.Checked ? E84Direction.Load : E84Direction.Unload;
 
             AddLog($"=== 啟動控制器 Direction: {direction} ===");
 
@@ -191,8 +191,8 @@ namespace E84.Controller.Core
 
             buttonStart.Enabled = false;
             buttonStop.Enabled = true;
-            radioInbound.Enabled = false;
-            radioOutbound.Enabled = false;
+            radioLoad.Enabled = false;
+            radioUnload.Enabled = false;
             timerUpdate.Start();
          }
          catch (Exception ex)
@@ -214,8 +214,8 @@ namespace E84.Controller.Core
 
             buttonStart.Enabled = true;
             buttonStop.Enabled = false;
-            radioInbound.Enabled = true;
-            radioOutbound.Enabled = true;
+            radioLoad.Enabled = true;
+            radioUnload.Enabled = true;
 
             // 重置所有輸入
             foreach (Control c in groupBoxInputs.Controls)
@@ -274,12 +274,14 @@ namespace E84.Controller.Core
                case E84State.Idle:
                   labelCurrentState.ForeColor = Color.Blue;
                   break;
-               case E84State.Request:
-               case E84State.Busy:
-               case E84State.Valid:
-               case E84State.Transfer:
+               case E84State.WaitingRequest:
+               case E84State.TrReqSent:
+               case E84State.ReadyReceived:
+               case E84State.Transferring:
                   labelCurrentState.ForeColor = Color.Green;
                   break;
+               case E84State.TransferComplete:
+               case E84State.WaitingReadyOff:
                case E84State.Complete:
                   labelCurrentState.ForeColor = Color.DarkGreen;
                   break;
@@ -292,13 +294,11 @@ namespace E84.Controller.Core
                   break;
             }
 
-            // 更新輸出顯示
+            // 更新輸出顯示 - Active側輸出
+            UpdateOutputDisplay(labelVALID, status.Outputs.ContainsKey("VALID") && status.Outputs["VALID"]);
+            UpdateOutputDisplay(labelTR_REQ, status.Outputs.ContainsKey("TR_REQ") && status.Outputs["TR_REQ"]);
             UpdateOutputDisplay(labelBUSY, status.Outputs.ContainsKey("BUSY") && status.Outputs["BUSY"]);
-            UpdateOutputDisplay(labelHO_AVBL, status.Outputs.ContainsKey("HO_AVBL") && status.Outputs["HO_AVBL"]);
-            UpdateOutputDisplay(labelTRANSFER, status.Outputs.ContainsKey("TRANSFER") && status.Outputs["TRANSFER"]);
-            UpdateOutputDisplay(labelCLAMP, status.Outputs.ContainsKey("CLAMP") && status.Outputs["CLAMP"]);
-            UpdateOutputDisplay(labelDOCK, status.Outputs.ContainsKey("DOCK") && status.Outputs["DOCK"]);
-            UpdateOutputDisplay(labelABORT, status.Outputs.ContainsKey("ABORT") && status.Outputs["ABORT"]);
+            UpdateOutputDisplay(labelCOMP, status.Outputs.ContainsKey("COMP") && status.Outputs["COMP"]);
 
             // 更新狀態資訊
             var statusText = $"State: {status.State}\n" +
@@ -334,12 +334,12 @@ namespace E84.Controller.Core
 
       private void Form1_Load(object sender, EventArgs e)
       {
-         AddLog("=== E84 控制器測試介面已啟動 ===");
+         AddLog("=== E84 RGV/AGV控制器測試介面已啟動 ===");
          AddLog("說明：");
-         AddLog("1. 選擇方向 (Inbound/Outbound)");
+         AddLog("1. 選擇方向 (Load/Unload)");
          AddLog("2. 點擊「啟動 Start」開始控制器");
-         AddLog("3. 使用左側的核取方塊模擬 PLC 輸入信號");
-         AddLog("4. 觀察右側的輸出信號變化");
+         AddLog("3. 使用左側的核取方塊模擬 EQ端 輸入信號");
+         AddLog("4. 觀察右側的 RGV輸出 信號變化");
          AddLog("5. 查看狀態轉換和事件記錄");
          AddLog("");
       }
