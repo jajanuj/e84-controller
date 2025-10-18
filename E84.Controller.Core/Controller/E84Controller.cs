@@ -12,17 +12,19 @@ using E84.Controller.Core.Models;
 namespace E84.Controller.Core.Controller
 {
    /// <summary>
-   /// E84 狀態機控制核心。
+   /// E84 狀態機控制核心 - Active側(RGV/AGV)實作。
+   /// 
    /// 公開 API:
    /// - StartAsync(direction, ct)：開始背景輪詢與處理。
    /// - StopAsync()：請求停止並等待背景迴圈結束。
    /// - GetStatus()：回傳目前狀態快照與 I/O。
-   ///
-   /// 狀態機語意:
-   /// - 啟動時：確保 PLC 連線並將輸出初始化為安全預設（全部 false）。
-   /// - 持續執行循環：ReadInputs -> StepState -> WriteOutputs -> Delay(poll)。
-   /// - 每個狀態在進入/離開時記錄日誌，並處理逾時與透過 IE84SafetyInterlock 做互鎖檢查。
-   /// - 逾時或互鎖失敗會導致 Error/Abort 流程（包含 ABORT 輸出宣告）。
+   /// 
+   /// 實作規格:
+   /// - RGV/AGV作為Active側，發送VALID, TR_REQ, BUSY, COMP
+   /// - 接收EQ端(Passive)的L_REQ, U_REQ, READY, LC_REQ, UC_REQ等信號
+   /// - 所有交握訊號延遲0.5秒回覆
+   /// - 監控T1, T3, T5, T6超時
+   /// - 異常檢知與處理
    /// </summary>
    public class E84Controller
    {
@@ -42,11 +44,15 @@ namespace E84.Controller.Core.Controller
       private Task _backgroundTask;
 
       private CancellationTokenSource _cts;
-      private E84Direction _direction = E84Direction.Inbound;
+      private E84Direction _direction = E84Direction.Load;
       private Exception _lastError;
 
       private E84State _state = E84State.Idle;
       private DateTime _stateEnteredAt = DateTime.UtcNow;
+      
+      // 延遲發送信號的時間戳
+      private DateTime? _delayedSignalTime = null;
+      private Action _delayedSignalAction = null;
 
       /// <summary>
       /// 控制器事件回呼簽章。
@@ -86,7 +92,6 @@ namespace E84.Controller.Core.Controller
 
       /// <summary>
       /// 以指定方向啟動控制器背景處理。
-      /// 此方法非阻塞；若已在執行中，會允許切換方向而不中斷迴圈。
       /// </summary>
       public async Task StartAsync(E84Direction direction, CancellationToken ct)
       {
@@ -105,12 +110,13 @@ namespace E84.Controller.Core.Controller
             _state = E84State.Idle;
             _stateEnteredAt = DateTime.UtcNow;
             _lastError = null;
+            _delayedSignalTime = null;
+            _delayedSignalAction = null;
             _cts.Token.ThrowIfCancellationRequested();
 
             _backgroundTask = Task.Run(() => RunAsync(_cts.Token), _cts.Token);
          }
 
-         // optionally return once started
          await Task.CompletedTask;
       }
 
@@ -168,7 +174,7 @@ namespace E84.Controller.Core.Controller
 
       private async Task RunAsync(CancellationToken ct)
       {
-         // Ensure PLC is connected with configured retries
+         // Ensure PLC is connected
          try
          {
             _plc.EnsureConnected(_config.PlcReconnectMaxAttempts, _config.PlcReconnectDelayMs);
@@ -180,7 +186,6 @@ namespace E84.Controller.Core.Controller
             _logger.Error("Initial PLC connection failed", ex);
             _lastError = ex;
             OnEvent?.Invoke(E84Event.PlcDisconnected, "Initial PLC connect failed");
-            // continue and enter error state
             TransitionTo(E84State.Error);
          }
 
@@ -205,7 +210,6 @@ namespace E84.Controller.Core.Controller
                   {
                      _logger.Error("PLC reconnect failed", rex);
                      _lastError = rex;
-                     // keep outputs safe and sleep then continue polling for reconnection attempts
                      SetAllOutputsSafe();
                      await Task.Delay(_config.PlcReconnectDelayMs, ct).ConfigureAwait(false);
                      continue;
@@ -213,14 +217,15 @@ namespace E84.Controller.Core.Controller
                }
 
                ReadInputsWithDebounce();
+               CheckErrorConditions();
                Step(ct);
+               ProcessDelayedSignal();
                WriteOutputs();
             }
             catch (PlcException pex)
             {
                _logger.Error("PLC exception", pex);
                _lastError = pex;
-               // mark disconnected and try reconnect next cycle
                try
                {
                   _plc.Close();
@@ -234,8 +239,6 @@ namespace E84.Controller.Core.Controller
                _logger.Warn($"Interlock failed: {iex.InterlockName}");
                _lastError = iex;
                OnEvent?.Invoke(E84Event.InterlockFailed, iex.InterlockName);
-               // assert abort output
-               SetOutputState("ABORT", true);
                TransitionTo(E84State.Abort);
             }
             catch (E84TimeoutException tex)
@@ -243,8 +246,6 @@ namespace E84.Controller.Core.Controller
                _logger.Error($"Timeout: {tex.Message}");
                _lastError = tex;
                OnEvent?.Invoke(E84Event.Timeout, tex.Message);
-               // transition to Error/Abort
-               SetOutputState("ABORT", true);
                TransitionTo(E84State.Abort);
             }
             catch (OperationCanceledException)
@@ -316,14 +317,71 @@ namespace E84.Controller.Core.Controller
                }
                else
                {
-                  // update last changed time to current to continue stable period requirement
                   _inputLastChanged[name] = DateTime.UtcNow;
                }
             }
             else
             {
-               // stable, update last changed to now so next flip needs debounce
                _inputLastChanged[name] = DateTime.UtcNow;
+            }
+         }
+      }
+
+      /// <summary>
+      /// 檢查Active側的異常條件
+      /// </summary>
+      private void CheckErrorConditions()
+      {
+         // (5) L_REQ和U_REQ同時ON
+         if (GetInput("L_REQ") && GetInput("U_REQ"))
+         {
+            _logger.Error("Error: Both L_REQ and U_REQ are ON");
+            throw new E84TimeoutException(E84FaultCode.ErrorBothLReqUReqOn, _state, "L_REQ and U_REQ both ON");
+         }
+
+         // (6) TR_REQ未ON，READY先ON
+         if (!GetOutput("TR_REQ") && GetInput("READY"))
+         {
+            _logger.Error("Error: READY ON before TR_REQ");
+            throw new E84TimeoutException(E84FaultCode.ErrorReadyBeforeTrReq, _state, "READY before TR_REQ");
+         }
+
+         // (9) BUSY ON時，READY OFF
+         if (GetOutput("BUSY") && !GetInput("READY"))
+         {
+            // 例外：在TransferComplete狀態時READY可以OFF (這是正常流程)
+            if (_state != E84State.TransferComplete && _state != E84State.WaitingReadyOff && _state != E84State.Complete)
+            {
+               _logger.Error("Error: READY OFF while BUSY ON");
+               throw new E84TimeoutException(E84FaultCode.ErrorReadyOffDuringBusy, _state, "READY OFF during BUSY");
+            }
+         }
+
+         // (10) 移動到EQ Port時，LC_REQ或UC_REQ OFF (在WaitingRequest或之後的狀態檢查)
+         if (_state != E84State.Idle && _state != E84State.Abort && _state != E84State.Error && _state != E84State.Resetting)
+         {
+            bool lcReq = GetInput("LC_REQ");
+            bool ucReq = GetInput("UC_REQ");
+            
+            if (_direction == E84Direction.Load && !lcReq)
+            {
+               _logger.Error("Error: LC_REQ OFF during Load transfer");
+               throw new E84TimeoutException(E84FaultCode.ErrorLcUcReqOff, _state, "LC_REQ OFF");
+            }
+            else if (_direction == E84Direction.Unload && !ucReq)
+            {
+               _logger.Error("Error: UC_REQ OFF during Unload transfer");
+               throw new E84TimeoutException(E84FaultCode.ErrorLcUcReqOff, _state, "UC_REQ OFF");
+            }
+         }
+
+         // 檢查EQ_ONLINE狀態 - 如果OFF則結束交握
+         if (!GetInput("EQ_ONLINE"))
+         {
+            if (_state != E84State.Idle && _state != E84State.Error)
+            {
+               _logger.Warn("EQ_ONLINE is OFF, ending handshake");
+               TransitionTo(E84State.Abort);
             }
          }
       }
@@ -339,132 +397,209 @@ namespace E84.Controller.Core.Controller
          switch (_state)
          {
             case E84State.Idle:
-               // Wait for incoming request depending on direction
-               if (_direction == E84Direction.Inbound)
+               // 等待來自LCS的搬送命令(由外部觸發LC_REQ或UC_REQ)
+               // Load: 檢查LC_REQ
+               // Unload: 檢查UC_REQ
+               if (_direction == E84Direction.Load && GetInput("LC_REQ"))
                {
-                  if (GetInput("TR_REQ"))
+                  // RGV接收到LC_REQ，準備移動到EQ位置並發送Carrier ID和VALID
+                  _logger.Info("LC_REQ received, starting Load sequence");
+                  // 延遲0.5秒後發送VALID
+                  ScheduleDelayedSignal(() =>
                   {
-                     TransitionTo(E84State.Request);
-                  }
+                     SetOutputState("VALID", true);
+                     TransitionTo(E84State.WaitingRequest);
+                  });
                }
-               else
+               else if (_direction == E84Direction.Unload && GetInput("UC_REQ"))
                {
-                  // Outbound triggered by L_REQ/U_REQ
-                  if (GetInput("L_REQ") || GetInput("U_REQ"))
+                  // RGV接收到UC_REQ (EQ已發送Carrier ID)，準備移動到EQ位置並發送VALID
+                  _logger.Info("UC_REQ received, starting Unload sequence");
+                  // 延遲0.5秒後發送VALID
+                  ScheduleDelayedSignal(() =>
                   {
-                     TransitionTo(E84State.Request);
-                  }
+                     SetOutputState("VALID", true);
+                     TransitionTo(E84State.WaitingRequest);
+                  });
                }
-
                break;
 
-            case E84State.Request:
-               // assert BUSY/HO_AVBL or CLAMP according to direction
-               if (_direction == E84Direction.Inbound)
+            case E84State.WaitingRequest:
+               // 已發送VALID，等待EQ的L_REQ或U_REQ (T1超時監控)
+               if (_direction == E84Direction.Load && GetInput("L_REQ"))
                {
-                  SetOutputState("HO_AVBL", true); // tell AMHS we are available for handoff
-                  SetOutputState("BUSY", true);
-                  TransitionTo(E84State.Busy);
-               }
-               else
-               {
-                  // Outbound: clamp then dock
-                  SetOutputState("CLAMP", true);
-                  // wait clamp action time
-                  if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > _config.ClampMs)
+                  _logger.Info("L_REQ received");
+                  // 延遲0.5秒後發送TR_REQ
+                  ScheduleDelayedSignal(() =>
                   {
-                     TransitionTo(E84State.Busy);
-                  }
+                     SetOutputState("TR_REQ", true);
+                     TransitionTo(E84State.TrReqSent);
+                  });
                }
-
+               else if (_direction == E84Direction.Unload && GetInput("U_REQ"))
+               {
+                  _logger.Info("U_REQ received");
+                  // 延遲0.5秒後發送TR_REQ
+                  ScheduleDelayedSignal(() =>
+                  {
+                     SetOutputState("TR_REQ", true);
+                     TransitionTo(E84State.TrReqSent);
+                  });
+               }
+               else if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > _config.T1_WaitLReqUReqMs)
+               {
+                  // T1超時
+                  throw new E84TimeoutException(E84FaultCode.TimeoutT1_WaitLReqUReq, _state, "L_REQ/U_REQ");
+               }
                break;
 
-            case E84State.Busy:
-               if (_direction == E84Direction.Inbound)
+            case E84State.TrReqSent:
+               // 已發送TR_REQ，等待EQ的READY (T3超時監控)
+               if (GetInput("READY"))
                {
-                  // wait for VALID from partner
-                  if (GetInput("VALID"))
+                  _logger.Info("READY received");
+                  // 延遲0.5秒後發送BUSY
+                  ScheduleDelayedSignal(() =>
                   {
-                     TransitionTo(E84State.Valid);
-                  }
-                  else if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > _config.WaitValidMs)
-                  {
-                     throw new E84TimeoutException(E84FaultCode.TimeoutWaitValid, _state, "VALID");
-                  }
+                     SetOutputState("BUSY", true);
+                     TransitionTo(E84State.ReadyReceived);
+                  });
                }
-               else
+               else if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > _config.T3_WaitReadyMs)
                {
-                  // Outbound: Dock action
-                  SetOutputState("DOCK", true);
-                  if (GetInput("READY"))
-                  {
-                     TransitionTo(E84State.Valid);
-                  }
-                  else if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > _config.DockMs)
-                  {
-                     throw new E84TimeoutException(E84FaultCode.TimeoutWaitTrReq, _state, "READY");
-                  }
+                  // T3超時
+                  throw new E84TimeoutException(E84FaultCode.TimeoutT3_WaitReady, _state, "READY");
                }
-
                break;
 
-            case E84State.Valid:
-               // perform transfer: assert TRANSFER and wait COMPT
-               SetOutputState("TRANSFER", true);
-               TransitionTo(E84State.Transfer);
+            case E84State.ReadyReceived:
+               // BUSY已ON，立即開始搬運動作
+               TransitionTo(E84State.Transferring);
                break;
 
-            case E84State.Transfer:
-               // wait for COMPT
-               if (GetInput("COMPT"))
+            case E84State.Transferring:
+               // 模擬搬運動作 - 實際應用中這裡會與RGV的動作系統整合
+               // T5: 監控搬運動作時間
+               if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > _config.T5_TransferActionMs)
                {
-                  TransitionTo(E84State.Complete);
+                  // 搬運完成，離開交握區
+                  _logger.Info("Transfer action complete, leaving handshake area");
+                  SetOutputState("BUSY", false);
+                  TransitionTo(E84State.TransferComplete);
                }
-               else if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > _config.WaitComptMs)
-               {
-                  throw new E84TimeoutException(E84FaultCode.TimeoutWaitCompt, _state, "COMPT");
-               }
+               break;
 
+            case E84State.TransferComplete:
+               // BUSY已OFF，發送COMP
+               ScheduleDelayedSignal(() =>
+               {
+                  SetOutputState("COMP", true);
+                  TransitionTo(E84State.WaitingReadyOff);
+               });
+               break;
+
+            case E84State.WaitingReadyOff:
+               // 已發送COMP，等待EQ的READY OFF (T6超時監控)
+               if (!GetInput("READY"))
+               {
+                  _logger.Info("READY OFF received");
+                  // 延遲0.5秒後COMP OFF
+                  ScheduleDelayedSignal(() =>
+                  {
+                     SetOutputState("COMP", false);
+                     TransitionTo(E84State.Complete);
+                  });
+               }
+               else if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > _config.T6_WaitReadyOffMs)
+               {
+                  // T6超時
+                  throw new E84TimeoutException(E84FaultCode.TimeoutT6_WaitReadyOff, _state, "READY OFF");
+               }
                break;
 
             case E84State.Complete:
-               // clear TRANSFER and BUSY/CLAMP/DOCK and go back to Idle
-               SetOutputState("TRANSFER", false);
-               SetOutputState("BUSY", false);
-               SetOutputState("HO_AVBL", false);
-               SetOutputState("CLAMP", false);
-               SetOutputState("DOCK", false);
+               // COMP已OFF，VALID OFF，返回Idle
+               SetOutputState("VALID", false);
+               SetOutputState("TR_REQ", false);
                TransitionTo(E84State.Idle);
                break;
 
             case E84State.Abort:
-               // keep ABORT asserted until RESET input is observed or manual reset
-               if (GetInput("RESET"))
+               // 異常狀態 - 根據規格處理
+               // 如果BUSY未ON，所有信號OFF
+               // 如果BUSY已ON，等待離開交握區後BUSY OFF，其他信號OFF
+               if (GetOutput("BUSY"))
                {
-                  SetOutputState("ABORT", false);
+                  _logger.Info("Abort during BUSY - waiting to leave handshake area");
+                  // 實際應用中應該等待物理位置離開交握區
+                  // 這裡簡化為延遲後BUSY OFF
+                  if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > 2000)
+                  {
+                     SetOutputState("BUSY", false);
+                  }
+               }
+               
+               // 清除所有信號
+               SetOutputState("VALID", false);
+               SetOutputState("TR_REQ", false);
+               SetOutputState("COMP", false);
+               
+               // 等待手動重置或條件恢復
+               if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > 1000)
+               {
                   TransitionTo(E84State.Resetting);
                }
-
                break;
 
             case E84State.Resetting:
-               // wait a short time then go Idle
-               if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > 250)
+               // 復原後返回Idle
+               if ((DateTime.UtcNow - _stateEnteredAt).TotalMilliseconds > 500)
                {
+                  _lastError = null;
                   TransitionTo(E84State.Idle);
                }
-
                break;
 
             case E84State.Error:
-               // remain until external reset
+               // 保持在錯誤狀態直到外部重置
                break;
+         }
+      }
+
+      /// <summary>
+      /// 排程延遲0.5秒的信號動作
+      /// </summary>
+      private void ScheduleDelayedSignal(Action action)
+      {
+         _delayedSignalTime = DateTime.UtcNow.AddMilliseconds(_config.SignalResponseDelayMs);
+         _delayedSignalAction = action;
+      }
+
+      /// <summary>
+      /// 處理延遲信號
+      /// </summary>
+      private void ProcessDelayedSignal()
+      {
+         if (_delayedSignalTime.HasValue && _delayedSignalAction != null)
+         {
+            if (DateTime.UtcNow >= _delayedSignalTime.Value)
+            {
+               _delayedSignalAction.Invoke();
+               _delayedSignalTime = null;
+               _delayedSignalAction = null;
+            }
          }
       }
 
       private bool GetInput(string logicalName)
       {
          if (!_inputStable.TryGetValue(logicalName, out bool v)) return false;
+         return v;
+      }
+
+      private bool GetOutput(string logicalName)
+      {
+         if (!_outputState.TryGetValue(logicalName, out bool v)) return false;
          return v;
       }
 
@@ -489,7 +624,6 @@ namespace E84.Controller.Core.Controller
 
          try
          {
-            // apply inversion at write-time: if mapping says Inverted, flip logical value
             bool writeValue = dev.Value.Inverted ? !value : value;
             _plc.WriteBit(dev.Value.Address, writeValue);
             _outputState[logicalName] = value;
@@ -504,8 +638,7 @@ namespace E84.Controller.Core.Controller
 
       private void WriteOutputs()
       {
-         // Ensure outputs stored in _outputState are actually written — this method can be used for batch writes later.
-         // Currently writes were already executed in SetOutputState; consider extending to batch writes to reduce PLC chatter.
+         // Outputs are written immediately in SetOutputState
       }
 
       private void SetAllOutputsSafe()
@@ -527,7 +660,6 @@ namespace E84.Controller.Core.Controller
             }
             catch
             {
-               // swallow to ensure best-effort safe outputs
             }
          }
       }

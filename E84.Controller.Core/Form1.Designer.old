@@ -1,0 +1,452 @@
+﻿namespace E84.Controller.Core
+{
+   partial class Form1
+   {
+      /// <summary>
+      /// 設計工具所需的變數。
+      /// </summary>
+      private System.ComponentModel.IContainer components = null;
+
+      /// <summary>
+      /// 清除任何使用中的資源。
+      /// </summary>
+      /// <param name="disposing">如果應該處置受控資源則為 true，否則為 false。</param>
+      protected override void Dispose(bool disposing)
+      {
+         if (disposing && (components != null))
+         {
+            components.Dispose();
+         }
+         base.Dispose(disposing);
+      }
+
+      #region Windows Form 設計工具產生的程式碼
+
+      /// <summary>
+      /// 此為設計工具支援所需的方法 - 請勿使用程式碼編輯器修改
+      /// 這個方法的內容。
+      /// </summary>
+      private void InitializeComponent()
+      {
+         this.components = new System.ComponentModel.Container();
+         this.groupBoxController = new System.Windows.Forms.GroupBox();
+         this.labelCurrentState = new System.Windows.Forms.Label();
+         this.labelState = new System.Windows.Forms.Label();
+         this.buttonStop = new System.Windows.Forms.Button();
+         this.buttonStart = new System.Windows.Forms.Button();
+         this.radioUnload = new System.Windows.Forms.RadioButton();
+         this.radioLoad = new System.Windows.Forms.RadioButton();
+         this.labelDirection = new System.Windows.Forms.Label();
+         this.groupBoxInputs = new System.Windows.Forms.GroupBox();
+         this.checkBoxRUN = new System.Windows.Forms.CheckBox();
+         this.checkBoxIDLE = new System.Windows.Forms.CheckBox();
+         this.checkBoxALARM = new System.Windows.Forms.CheckBox();
+         this.checkBoxIN_LINE = new System.Windows.Forms.CheckBox();
+         this.checkBoxEQ_ONLINE = new System.Windows.Forms.CheckBox();
+         this.checkBoxCarrier = new System.Windows.Forms.CheckBox();
+         this.checkBoxUC_REQ = new System.Windows.Forms.CheckBox();
+         this.checkBoxLC_REQ = new System.Windows.Forms.CheckBox();
+         this.checkBoxREADY = new System.Windows.Forms.CheckBox();
+         this.checkBoxU_REQ = new System.Windows.Forms.CheckBox();
+         this.checkBoxL_REQ = new System.Windows.Forms.CheckBox();
+         this.groupBoxOutputs = new System.Windows.Forms.GroupBox();
+         this.labelCOMP = new System.Windows.Forms.Label();
+         this.labelBUSY = new System.Windows.Forms.Label();
+         this.labelTR_REQ = new System.Windows.Forms.Label();
+         this.labelVALID = new System.Windows.Forms.Label();
+         this.groupBoxLog = new System.Windows.Forms.GroupBox();
+         this.textBoxLog = new System.Windows.Forms.TextBox();
+         this.timerUpdate = new System.Windows.Forms.Timer(this.components);
+         this.groupBoxStatus = new System.Windows.Forms.GroupBox();
+         this.labelStatusInfo = new System.Windows.Forms.Label();
+         this.groupBoxController.SuspendLayout();
+         this.groupBoxInputs.SuspendLayout();
+         this.groupBoxOutputs.SuspendLayout();
+         this.groupBoxLog.SuspendLayout();
+         this.groupBoxStatus.SuspendLayout();
+         this.SuspendLayout();
+         // 
+         // groupBoxController
+         // 
+         this.groupBoxController.Controls.Add(this.labelCurrentState);
+         this.groupBoxController.Controls.Add(this.labelState);
+         this.groupBoxController.Controls.Add(this.buttonStop);
+         this.groupBoxController.Controls.Add(this.buttonStart);
+         this.groupBoxController.Controls.Add(this.radioOutbound);
+         this.groupBoxController.Controls.Add(this.radioInbound);
+         this.groupBoxController.Controls.Add(this.labelDirection);
+         this.groupBoxController.Location = new System.Drawing.Point(12, 12);
+         this.groupBoxController.Name = "groupBoxController";
+         this.groupBoxController.Size = new System.Drawing.Size(300, 150);
+         this.groupBoxController.TabIndex = 0;
+         this.groupBoxController.TabStop = false;
+         this.groupBoxController.Text = "控制器 Controller";
+         // 
+         // labelCurrentState
+         // 
+         this.labelCurrentState.AutoSize = true;
+         this.labelCurrentState.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.labelCurrentState.ForeColor = System.Drawing.Color.Blue;
+         this.labelCurrentState.Location = new System.Drawing.Point(90, 110);
+         this.labelCurrentState.Name = "labelCurrentState";
+         this.labelCurrentState.Size = new System.Drawing.Size(41, 20);
+         this.labelCurrentState.TabIndex = 6;
+         this.labelCurrentState.Text = "Idle";
+         // 
+         // labelState
+         // 
+         this.labelState.AutoSize = true;
+         this.labelState.Location = new System.Drawing.Point(15, 115);
+         this.labelState.Name = "labelState";
+         this.labelState.Size = new System.Drawing.Size(69, 13);
+         this.labelState.TabIndex = 5;
+         this.labelState.Text = "狀態 State:";
+         // 
+         // buttonStop
+         // 
+         this.buttonStop.Enabled = false;
+         this.buttonStop.Location = new System.Drawing.Point(185, 73);
+         this.buttonStop.Name = "buttonStop";
+         this.buttonStop.Size = new System.Drawing.Size(90, 25);
+         this.buttonStop.TabIndex = 4;
+         this.buttonStop.Text = "停止 Stop";
+         this.buttonStop.UseVisualStyleBackColor = true;
+         this.buttonStop.Click += new System.EventHandler(this.buttonStop_Click);
+         // 
+         // buttonStart
+         // 
+         this.buttonStart.Location = new System.Drawing.Point(185, 42);
+         this.buttonStart.Name = "buttonStart";
+         this.buttonStart.Size = new System.Drawing.Size(90, 25);
+         this.buttonStart.TabIndex = 3;
+         this.buttonStart.Text = "啟動 Start";
+         this.buttonStart.UseVisualStyleBackColor = true;
+         this.buttonStart.Click += new System.EventHandler(this.buttonStart_Click);
+         // 
+         // radioOutbound
+         // 
+         this.radioOutbound.AutoSize = true;
+         this.radioOutbound.Location = new System.Drawing.Point(18, 66);
+         this.radioOutbound.Name = "radioOutbound";
+         this.radioOutbound.Size = new System.Drawing.Size(112, 17);
+         this.radioOutbound.TabIndex = 2;
+         this.radioOutbound.Text = "Outbound (出站)";
+         this.radioOutbound.UseVisualStyleBackColor = true;
+         // 
+         // radioInbound
+         // 
+         this.radioInbound.AutoSize = true;
+         this.radioInbound.Checked = true;
+         this.radioInbound.Location = new System.Drawing.Point(18, 43);
+         this.radioInbound.Name = "radioInbound";
+         this.radioInbound.Size = new System.Drawing.Size(104, 17);
+         this.radioInbound.TabIndex = 1;
+         this.radioInbound.TabStop = true;
+         this.radioInbound.Text = "Inbound (進站)";
+         this.radioInbound.UseVisualStyleBackColor = true;
+         // 
+         // labelDirection
+         // 
+         this.labelDirection.AutoSize = true;
+         this.labelDirection.Location = new System.Drawing.Point(15, 20);
+         this.labelDirection.Name = "labelDirection";
+         this.labelDirection.Size = new System.Drawing.Size(91, 13);
+         this.labelDirection.TabIndex = 0;
+         this.labelDirection.Text = "方向 Direction:";
+         // 
+         // groupBoxInputs
+         // 
+         this.groupBoxInputs.Controls.Add(this.checkBoxRESET);
+         this.groupBoxInputs.Controls.Add(this.checkBoxREADY);
+         this.groupBoxInputs.Controls.Add(this.checkBoxU_REQ);
+         this.groupBoxInputs.Controls.Add(this.checkBoxL_REQ);
+         this.groupBoxInputs.Controls.Add(this.checkBoxCOMPT);
+         this.groupBoxInputs.Controls.Add(this.checkBoxVALID);
+         this.groupBoxInputs.Controls.Add(this.checkBoxTR_REQ);
+         this.groupBoxInputs.Location = new System.Drawing.Point(12, 168);
+         this.groupBoxInputs.Name = "groupBoxInputs";
+         this.groupBoxInputs.Size = new System.Drawing.Size(300, 220);
+         this.groupBoxInputs.TabIndex = 1;
+         this.groupBoxInputs.TabStop = false;
+         this.groupBoxInputs.Text = "模擬 PLC 輸入 (Simulated Inputs)";
+         // 
+         // checkBoxRESET
+         // 
+         this.checkBoxRESET.AutoSize = true;
+         this.checkBoxRESET.Location = new System.Drawing.Point(18, 183);
+         this.checkBoxRESET.Name = "checkBoxRESET";
+         this.checkBoxRESET.Size = new System.Drawing.Size(153, 17);
+         this.checkBoxRESET.TabIndex = 6;
+         this.checkBoxRESET.Text = "RESET (重置)";
+         this.checkBoxRESET.UseVisualStyleBackColor = true;
+         this.checkBoxRESET.CheckedChanged += new System.EventHandler(this.checkBoxInput_CheckedChanged);
+         // 
+         // checkBoxREADY
+         // 
+         this.checkBoxREADY.AutoSize = true;
+         this.checkBoxREADY.Location = new System.Drawing.Point(18, 160);
+         this.checkBoxREADY.Name = "checkBoxREADY";
+         this.checkBoxREADY.Size = new System.Drawing.Size(163, 17);
+         this.checkBoxREADY.TabIndex = 5;
+         this.checkBoxREADY.Text = "READY (就緒)";
+         this.checkBoxREADY.UseVisualStyleBackColor = true;
+         this.checkBoxREADY.CheckedChanged += new System.EventHandler(this.checkBoxInput_CheckedChanged);
+         // 
+         // checkBoxU_REQ
+         // 
+         this.checkBoxU_REQ.AutoSize = true;
+         this.checkBoxU_REQ.Location = new System.Drawing.Point(18, 137);
+         this.checkBoxU_REQ.Name = "checkBoxU_REQ";
+         this.checkBoxU_REQ.Size = new System.Drawing.Size(177, 17);
+         this.checkBoxU_REQ.TabIndex = 4;
+         this.checkBoxU_REQ.Text = "U_REQ (上層請求)";
+         this.checkBoxU_REQ.UseVisualStyleBackColor = true;
+         this.checkBoxU_REQ.CheckedChanged += new System.EventHandler(this.checkBoxInput_CheckedChanged);
+         // 
+         // checkBoxL_REQ
+         // 
+         this.checkBoxL_REQ.AutoSize = true;
+         this.checkBoxL_REQ.Location = new System.Drawing.Point(18, 114);
+         this.checkBoxL_REQ.Name = "checkBoxL_REQ";
+         this.checkBoxL_REQ.Size = new System.Drawing.Size(173, 17);
+         this.checkBoxL_REQ.TabIndex = 3;
+         this.checkBoxL_REQ.Text = "L_REQ (下層請求)";
+         this.checkBoxL_REQ.UseVisualStyleBackColor = true;
+         this.checkBoxL_REQ.CheckedChanged += new System.EventHandler(this.checkBoxInput_CheckedChanged);
+         // 
+         // checkBoxCOMPT
+         // 
+         this.checkBoxCOMPT.AutoSize = true;
+         this.checkBoxCOMPT.Location = new System.Drawing.Point(18, 91);
+         this.checkBoxCOMPT.Name = "checkBoxCOMPT";
+         this.checkBoxCOMPT.Size = new System.Drawing.Size(164, 17);
+         this.checkBoxCOMPT.TabIndex = 2;
+         this.checkBoxCOMPT.Text = "COMPT (完成)";
+         this.checkBoxCOMPT.UseVisualStyleBackColor = true;
+         this.checkBoxCOMPT.CheckedChanged += new System.EventHandler(this.checkBoxInput_CheckedChanged);
+         // 
+         // checkBoxVALID
+         // 
+         this.checkBoxVALID.AutoSize = true;
+         this.checkBoxVALID.Location = new System.Drawing.Point(18, 68);
+         this.checkBoxVALID.Name = "checkBoxVALID";
+         this.checkBoxVALID.Size = new System.Drawing.Size(150, 17);
+         this.checkBoxVALID.TabIndex = 1;
+         this.checkBoxVALID.Text = "VALID (有效)";
+         this.checkBoxVALID.UseVisualStyleBackColor = true;
+         this.checkBoxVALID.CheckedChanged += new System.EventHandler(this.checkBoxInput_CheckedChanged);
+         // 
+         // checkBoxTR_REQ
+         // 
+         this.checkBoxTR_REQ.AutoSize = true;
+         this.checkBoxTR_REQ.Location = new System.Drawing.Point(18, 45);
+         this.checkBoxTR_REQ.Name = "checkBoxTR_REQ";
+         this.checkBoxTR_REQ.Size = new System.Drawing.Size(174, 17);
+         this.checkBoxTR_REQ.TabIndex = 0;
+         this.checkBoxTR_REQ.Text = "TR_REQ (轉運請求)";
+         this.checkBoxTR_REQ.UseVisualStyleBackColor = true;
+         this.checkBoxTR_REQ.CheckedChanged += new System.EventHandler(this.checkBoxInput_CheckedChanged);
+         // 
+         // groupBoxOutputs
+         // 
+         this.groupBoxOutputs.Controls.Add(this.labelABORT);
+         this.groupBoxOutputs.Controls.Add(this.labelDOCK);
+         this.groupBoxOutputs.Controls.Add(this.labelCLAMP);
+         this.groupBoxOutputs.Controls.Add(this.labelTRANSFER);
+         this.groupBoxOutputs.Controls.Add(this.labelHO_AVBL);
+         this.groupBoxOutputs.Controls.Add(this.labelBUSY);
+         this.groupBoxOutputs.Location = new System.Drawing.Point(318, 12);
+         this.groupBoxOutputs.Name = "groupBoxOutputs";
+         this.groupBoxOutputs.Size = new System.Drawing.Size(250, 220);
+         this.groupBoxOutputs.TabIndex = 2;
+         this.groupBoxOutputs.TabStop = false;
+         this.groupBoxOutputs.Text = "PLC 輸出 (Outputs)";
+         // 
+         // labelABORT
+         // 
+         this.labelABORT.BackColor = System.Drawing.Color.LightGray;
+         this.labelABORT.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+         this.labelABORT.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.labelABORT.Location = new System.Drawing.Point(15, 175);
+         this.labelABORT.Name = "labelABORT";
+         this.labelABORT.Size = new System.Drawing.Size(220, 30);
+         this.labelABORT.TabIndex = 5;
+         this.labelABORT.Text = "ABORT (中止)";
+         this.labelABORT.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+         // 
+         // labelDOCK
+         // 
+         this.labelDOCK.BackColor = System.Drawing.Color.LightGray;
+         this.labelDOCK.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+         this.labelDOCK.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.labelDOCK.Location = new System.Drawing.Point(15, 145);
+         this.labelDOCK.Name = "labelDOCK";
+         this.labelDOCK.Size = new System.Drawing.Size(220, 30);
+         this.labelDOCK.TabIndex = 4;
+         this.labelDOCK.Text = "DOCK (對接)";
+         this.labelDOCK.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+         // 
+         // labelCLAMP
+         // 
+         this.labelCLAMP.BackColor = System.Drawing.Color.LightGray;
+         this.labelCLAMP.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+         this.labelCLAMP.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.labelCLAMP.Location = new System.Drawing.Point(15, 115);
+         this.labelCLAMP.Name = "labelCLAMP";
+         this.labelCLAMP.Size = new System.Drawing.Size(220, 30);
+         this.labelCLAMP.TabIndex = 3;
+         this.labelCLAMP.Text = "CLAMP (夾緊)";
+         this.labelCLAMP.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+         // 
+         // labelTRANSFER
+         // 
+         this.labelTRANSFER.BackColor = System.Drawing.Color.LightGray;
+         this.labelTRANSFER.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+         this.labelTRANSFER.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.labelTRANSFER.Location = new System.Drawing.Point(15, 85);
+         this.labelTRANSFER.Name = "labelTRANSFER";
+         this.labelTRANSFER.Size = new System.Drawing.Size(220, 30);
+         this.labelTRANSFER.TabIndex = 2;
+         this.labelTRANSFER.Text = "TRANSFER (轉運)";
+         this.labelTRANSFER.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+         // 
+         // labelHO_AVBL
+         // 
+         this.labelHO_AVBL.BackColor = System.Drawing.Color.LightGray;
+         this.labelHO_AVBL.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+         this.labelHO_AVBL.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.labelHO_AVBL.Location = new System.Drawing.Point(15, 55);
+         this.labelHO_AVBL.Name = "labelHO_AVBL";
+         this.labelHO_AVBL.Size = new System.Drawing.Size(220, 30);
+         this.labelHO_AVBL.TabIndex = 1;
+         this.labelHO_AVBL.Text = "HO_AVBL (可接收)";
+         this.labelHO_AVBL.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+         // 
+         // labelBUSY
+         // 
+         this.labelBUSY.BackColor = System.Drawing.Color.LightGray;
+         this.labelBUSY.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+         this.labelBUSY.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.labelBUSY.Location = new System.Drawing.Point(15, 25);
+         this.labelBUSY.Name = "labelBUSY";
+         this.labelBUSY.Size = new System.Drawing.Size(220, 30);
+         this.labelBUSY.TabIndex = 0;
+         this.labelBUSY.Text = "BUSY (忙碌)";
+         this.labelBUSY.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+         // 
+         // groupBoxLog
+         // 
+         this.groupBoxLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+         this.groupBoxLog.Controls.Add(this.textBoxLog);
+         this.groupBoxLog.Location = new System.Drawing.Point(574, 12);
+         this.groupBoxLog.Name = "groupBoxLog";
+         this.groupBoxLog.Size = new System.Drawing.Size(414, 526);
+         this.groupBoxLog.TabIndex = 3;
+         this.groupBoxLog.TabStop = false;
+         this.groupBoxLog.Text = "事件記錄 Event Log";
+         // 
+         // textBoxLog
+         // 
+         this.textBoxLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+         this.textBoxLog.BackColor = System.Drawing.Color.Black;
+         this.textBoxLog.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.textBoxLog.ForeColor = System.Drawing.Color.Lime;
+         this.textBoxLog.Location = new System.Drawing.Point(6, 19);
+         this.textBoxLog.Multiline = true;
+         this.textBoxLog.Name = "textBoxLog";
+         this.textBoxLog.ReadOnly = true;
+         this.textBoxLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+         this.textBoxLog.Size = new System.Drawing.Size(402, 501);
+         this.textBoxLog.TabIndex = 0;
+         // 
+         // timerUpdate
+         // 
+         this.timerUpdate.Interval = 100;
+         this.timerUpdate.Tick += new System.EventHandler(this.timerUpdate_Tick);
+         // 
+         // groupBoxStatus
+         // 
+         this.groupBoxStatus.Controls.Add(this.labelStatusInfo);
+         this.groupBoxStatus.Location = new System.Drawing.Point(318, 238);
+         this.groupBoxStatus.Name = "groupBoxStatus";
+         this.groupBoxStatus.Size = new System.Drawing.Size(250, 150);
+         this.groupBoxStatus.TabIndex = 4;
+         this.groupBoxStatus.TabStop = false;
+         this.groupBoxStatus.Text = "狀態資訊 Status Info";
+         // 
+         // labelStatusInfo
+         // 
+         this.labelStatusInfo.AutoSize = true;
+         this.labelStatusInfo.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+         this.labelStatusInfo.Location = new System.Drawing.Point(12, 20);
+         this.labelStatusInfo.Name = "labelStatusInfo";
+         this.labelStatusInfo.Size = new System.Drawing.Size(97, 13);
+         this.labelStatusInfo.TabIndex = 0;
+         this.labelStatusInfo.Text = "Status: Idle...";
+         // 
+         // Form1
+         // 
+         this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+         this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+         this.ClientSize = new System.Drawing.Size(1000, 550);
+         this.Controls.Add(this.groupBoxStatus);
+         this.Controls.Add(this.groupBoxLog);
+         this.Controls.Add(this.groupBoxOutputs);
+         this.Controls.Add(this.groupBoxInputs);
+         this.Controls.Add(this.groupBoxController);
+         this.MinimumSize = new System.Drawing.Size(1016, 589);
+         this.Name = "Form1";
+         this.Text = "E84 控制器測試介面 E84 Controller Test UI";
+         this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
+         this.Load += new System.EventHandler(this.Form1_Load);
+         this.groupBoxController.ResumeLayout(false);
+         this.groupBoxController.PerformLayout();
+         this.groupBoxInputs.ResumeLayout(false);
+         this.groupBoxInputs.PerformLayout();
+         this.groupBoxOutputs.ResumeLayout(false);
+         this.groupBoxLog.ResumeLayout(false);
+         this.groupBoxLog.ResumeLayout(false);
+         this.groupBoxLog.PerformLayout();
+         this.groupBoxStatus.ResumeLayout(false);
+         this.groupBoxStatus.PerformLayout();
+         this.ResumeLayout(false);
+
+      }
+
+      #endregion
+
+      private System.Windows.Forms.GroupBox groupBoxController;
+      private System.Windows.Forms.Label labelDirection;
+      private System.Windows.Forms.RadioButton radioInbound;
+      private System.Windows.Forms.RadioButton radioOutbound;
+      private System.Windows.Forms.Button buttonStart;
+      private System.Windows.Forms.Button buttonStop;
+      private System.Windows.Forms.Label labelState;
+      private System.Windows.Forms.Label labelCurrentState;
+      private System.Windows.Forms.GroupBox groupBoxInputs;
+      private System.Windows.Forms.CheckBox checkBoxTR_REQ;
+      private System.Windows.Forms.CheckBox checkBoxVALID;
+      private System.Windows.Forms.CheckBox checkBoxCOMPT;
+      private System.Windows.Forms.CheckBox checkBoxL_REQ;
+      private System.Windows.Forms.CheckBox checkBoxU_REQ;
+      private System.Windows.Forms.CheckBox checkBoxREADY;
+      private System.Windows.Forms.CheckBox checkBoxRESET;
+      private System.Windows.Forms.GroupBox groupBoxOutputs;
+      private System.Windows.Forms.Label labelBUSY;
+      private System.Windows.Forms.Label labelHO_AVBL;
+      private System.Windows.Forms.Label labelTRANSFER;
+      private System.Windows.Forms.Label labelCLAMP;
+      private System.Windows.Forms.Label labelDOCK;
+      private System.Windows.Forms.Label labelABORT;
+      private System.Windows.Forms.GroupBox groupBoxLog;
+      private System.Windows.Forms.TextBox textBoxLog;
+      private System.Windows.Forms.Timer timerUpdate;
+      private System.Windows.Forms.GroupBox groupBoxStatus;
+      private System.Windows.Forms.Label labelStatusInfo;
+   }
+}
+
